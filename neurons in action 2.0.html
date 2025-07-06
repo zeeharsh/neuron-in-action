@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural Nexus: Cosmic Symphony</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: radial-gradient(ellipse at center, #0f0f0f 0%, #000000 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+    #title {
+      position: absolute;
+      top: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 2.2rem;
+      color: #00e6ff;
+      font-weight: 600;
+      text-shadow: 0 0 10px #00e6ff, 0 0 30px #007eff;
+      z-index: 1;
+    }
+    #quote {
+      position: absolute;
+      top: 70px;
+      width: 100%;
+      text-align: center;
+      font-size: 1.1rem;
+      color: #ffffffcc;
+      font-style: italic;
+      text-shadow: 0 0 5px #00ffff22;
+      z-index: 1;
+    }
+    #stats {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      font-size: 1rem;
+      color: #ffffff;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px 15px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px #00ffff;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="title">Neural Nexus: Cosmic Symphony</div>
+  <div id="quote">"Every thought is a spark in the infinite orchestra of the mind."</div>
+  <div id="stats">⚡ Neuron Firings: <span id="firedCount">0</span></div>
+
+  <script>
+    const quotes = [
+      "Every thought is a spark in the infinite orchestra of the mind.",
+      "Neurons don’t just fire — they compose symphonies.",
+      "You are the universe becoming aware of itself.",
+      "Between the synapses lies consciousness.",
+      "Each firing neuron is a whisper of intelligence."
+    ];
+    setInterval(() => {
+      const quoteDiv = document.getElementById('quote');
+      const newQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      quoteDiv.textContent = `"${newQuote}"`;
+    }, 8000);
+
+    let firedCount = 0;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 3;
+
+    // Starfield background
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 10000;
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i++) {
+      starPos[i] = (Math.random() - 0.5) * 3000;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starMat = new THREE.PointsMaterial({ size: 1.5, color: 0x99ccff });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    // Glowing helix neurons
+    const neurons = [];
+    const neuronGeo = new THREE.SphereGeometry(0.8, 32, 32);
+    const neonPalette = [0xff00cc, 0x00ffcc, 0xffff00, 0x00ff88, 0xff8800];
+    for (let i = 0; i < 70; i++) {
+      const angle = i * 0.35;
+      const radius = 18;
+      const x = radius * Math.cos(angle);
+      const y = (i - 35) * 1.8;
+      const z = radius * Math.sin(angle);
+      const color = new THREE.Color(neonPalette[i % neonPalette.length]);
+      const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2 });
+      const node = new THREE.Mesh(neuronGeo, mat);
+      node.position.set(x, y, z);
+      node.userData = { id: i, cooldown: 0, memory: 0 };
+      neurons.push(node);
+      scene.add(node);
+    }
+
+    // Connections with glow
+    const connections = [];
+    for (let i = 0; i < neurons.length; i++) {
+      for (let j = i + 1; j < neurons.length; j++) {
+        if (Math.random() > 0.96) {
+          const lineGeo = new THREE.BufferGeometry().setFromPoints([
+            neurons[i].position,
+            neurons[j].position
+          ]);
+          const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1 });
+          const line = new THREE.Line(lineGeo, mat);
+          scene.add(line);
+          connections.push({ line, from: neurons[i], to: neurons[j] });
+        }
+      }
+    }
+
+    // Signal Pulse Effect
+    function triggerPulse(from, to, color = 0xff00ff) {
+      const pulse = new THREE.Mesh(
+        new THREE.SphereGeometry(0.25, 8, 8),
+        new THREE.MeshBasicMaterial({ color })
+      );
+      scene.add(pulse);
+      let t = 0;
+      function animatePulse() {
+        if (t < 1) {
+          pulse.position.lerpVectors(from, to, t);
+          t += 0.02;
+          requestAnimationFrame(animatePulse);
+        } else {
+          scene.remove(pulse);
+        }
+      }
+      animatePulse();
+    }
+
+    // Audio Ping
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playPing(freq = 420) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.value = 0.15;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.2);
+    }
+
+    function fireNeuron(neuron) {
+      if (neuron.userData.cooldown > 0) return;
+      neuron.material.emissiveIntensity = 6;
+      setTimeout(() => (neuron.material.emissiveIntensity = 2), 400);
+      neuron.userData.cooldown = 40;
+      neuron.userData.memory += 1;
+      playPing(400 + Math.random() * 300);
+      firedCount++;
+      document.getElementById("firedCount").textContent = firedCount;
+
+      connections.forEach(edge => {
+        if (edge.from === neuron || edge.to === neuron) {
+          triggerPulse(edge.from.position, edge.to.position);
+        }
+      });
+    }
+
+    // Auto Fire
+    setInterval(() => {
+      const n = neurons[Math.floor(Math.random() * neurons.length)];
+      fireNeuron(n);
+    }, 1000);
+
+    // Click-to-fire
+    window.addEventListener("click", e => {
+      const mouse = new THREE.Vector2(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1
+      );
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(neurons);
+      if (hits.length > 0) fireNeuron(hits[0].object);
+    });
+
+    // Lights
+    const ambient = new THREE.AmbientLight(0xffffff, 2);
+    const point = new THREE.PointLight(0x00ffff, 10, 150);
+    point.position.set(60, 60, 60);
+    scene.add(ambient, point);
+
+    camera.position.set(0, 0, 120);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      stars.rotation.y += 0.0005;
+
+      neurons.forEach(n => {
+        if (n.userData.cooldown > 0) n.userData.cooldown--;
+        if (n.userData.memory > 0) {
+          n.userData.memory *= 0.98;
+          const baseColor = n.material.color.clone();
+          const boosted = baseColor.lerp(new THREE.Color(0xffffff), n.userData.memory / 100);
+          n.material.emissive = boosted;
+        }
+      });
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
